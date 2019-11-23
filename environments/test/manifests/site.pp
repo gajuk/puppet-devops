@@ -1,5 +1,6 @@
 node "test-site" {
 
+ 
   file { ['/var/www']:
     ensure => 'directory',
     owner   => root,
@@ -17,7 +18,15 @@ node "test-site" {
 
   class { 'nginx':
     client_max_body_size => '512M',
+    worker_processes => 2,
+
   }
+     file { ['/var/www/test-app', '/var/www/test-app/current', '/var/www/test-app/releases', '/var/www/test-app/shared']:
+      ensure => 'directory',
+      owner => 'root',
+      group => 'root',
+      mode => '0750',
+ }
 
   # NGINX Configuration
   file { '/etc/nginx/ssl':
@@ -59,8 +68,20 @@ node "test-site" {
   nginx::resource::location {"/":
     server                => "$server_name",
     ensure                => present,
+    ssl 		=> true,
     www_root             => "/var/www/test-app/current/",
     priority              => 401,
   }
+
+  nginx::resource::location { "~* ^.+\.(jpg|jpeg|gif)$":
+    server                => "$server_name",
+    ensure                => present,
+    ssl_only 		  => true,
+    www_root             => "/var/www/test-app/current/",
+    ssl 		=> true,
+    index_files		=>  ['index.html', 'index.htm', 'index.php' ],
+    expires		=> "30d",
+  }
+
 
 }
